@@ -55,7 +55,7 @@ export default defineComponent({
 			tableData: {} as Response,
 			searchValue: this.$route.query.search ? String(this.$route.query.search) : '',
 			pageNumber: this.$route.query.page ? parseInt(String(this.$route.query.page)) : 1,
-			sortedData: [] as ResponseResults[],
+			currentSort: {} as any,
 			limit: 20,
 			loading: true,
 			headers: [
@@ -70,13 +70,16 @@ export default defineComponent({
 		}
 	},
 	methods: {
+		getSortHeader() {
+			this.currentSort = this.headers.find((item) => item.name === this.$route.query.sortName);
+		},
 		async fetchData() {
       try {
 				this.loading = true;
         this.tableData = await getData<Response>('/api.json');
 				this.loading = false;
-				const headerItem = this.headers.find((item) => item.name === this.$route.query.sortName);
-				if (headerItem) this.sortTable(headerItem);
+				this.getSortHeader();
+				this.sortTable(this.currentSort);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -85,8 +88,7 @@ export default defineComponent({
       const split = path.split('.');
       return split.reduce((acc, el) => acc?.[el], obj);
     },
-		sortTable(item: {name: string, path: string, sortValue: string}): ResponseResults[] | undefined {
-			this.sortedData = this.filteredData || [];
+		sortTable(item: {name: string, path: string, sortValue: string}) {
 			if (!item.sortValue) {
 				item.sortValue = 'ASC';
 				const newQuery = {
@@ -95,9 +97,6 @@ export default defineComponent({
 				sortValue: item.sortValue
 				}
 				this.$router.push({ query: newQuery });
-					return this.sortedData.sort((a, b) => {
-						return this.sortedData = this.getObjData(a, item.path).toLowerCase().localeCompare(this.getObjData(b, item.path).toLowerCase())
-					});
       } else if (item.sortValue === 'ASC') {
         item.sortValue = 'DESC';
 				const newQuery = {
@@ -106,9 +105,6 @@ export default defineComponent({
 				sortValue: item.sortValue
 				}
 				this.$router.push({ query: newQuery });
-					return this.sortedData.sort((a, b) => {
-						return this.sortedData = this.getObjData(b, item.path).toLowerCase().localeCompare(this.getObjData(a, item.path).toLowerCase())
-					});
       } else if (item.sortValue === 'DESC') {
 				item.sortValue = '';
 				const newQuery = {
@@ -117,12 +113,7 @@ export default defineComponent({
 				sortValue: item.sortValue
 				}
 				this.$router.push({ query: newQuery });
-					return this.sortedData.sort((a, b) => {
-						return this.sortedData = this.getObjData(b, item.path).toLowerCase().localeCompare(this.getObjData(a, item.path).toLowerCase())
-					});
 			}
-			
-			return this.sortedData;
 		},
 		formatDate(date: string): string {
 			const dateObj = new Date(date);
@@ -171,16 +162,28 @@ export default defineComponent({
 			if (!this.loading) {
 				const start = (this.pageNumber - 1) * this.limit;
 				const end = start + this.limit;
-				return (this.filteredData || []).slice(start, end);
+				return (this.sortedData || []).slice(start, end);
 			}
-			return this.filteredData;
+			return this.sortedData;
 		},
-		filteredData(): ResponseResults[] | undefined {
+		filteredData(): ResponseResults[] {
 			if (!this.searchValue) {
         return this.tableData.results;
       }
       return this.tableData.results.filter(item => this.matchesSearch(item, this.searchValue));
-		}
+		},
+		sortedData(): ResponseResults[] {
+			this.getSortHeader();
+			if (this.currentSort.sortValue === 'ASC')
+			return [...this.filteredData].sort((a, b) => {
+				return this.getObjData(a, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(b, this.currentSort.path).toLowerCase())
+			});
+			if (this.currentSort.sortValue === 'DESC')
+			return [...this.filteredData].sort((a, b) => {
+				return this.getObjData(b, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(a, this.currentSort.path).toLowerCase())
+			});
+			return this.filteredData;
+		},
 	},
 	mounted() {
 		this.fetchData();
@@ -203,7 +206,7 @@ export default defineComponent({
 .table {
 	border: 2px solid black;
 	border-collapse: collapse;
-	th: {
+	th {
 		cursor: pointer;
 	}
 
