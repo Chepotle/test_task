@@ -55,7 +55,6 @@ export default defineComponent({
 			tableData: {} as Response,
 			searchValue: this.$route.query.search ? String(this.$route.query.search) : '',
 			pageNumber: this.$route.query.page ? parseInt(String(this.$route.query.page)) : 1,
-			currentSort: {} as {name: string, path: string, sortValue: string},
 			currentSortValue: this.$route.query.sortValue ? String(this.$route.query.sortValue): '',
 			currentSortName: this.$route.query.sortName ? String(this.$route.query.sortName): '',
 			currentSortItemPath: this.$route.query.sortPath ? String(this.$route.query.sortPath): '',
