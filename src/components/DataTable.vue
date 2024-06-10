@@ -11,7 +11,7 @@
 		<table v-else class="table">
 			<thead>
 				<tr>
-					<th @click="sortTable(header)" v-for="header in headers" :key="header.name">{{ header.name }}</th>
+					<th @click="sortTable(header.name, header.path)" v-for="header in headers" :key="header.name">{{ header.name }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -56,34 +56,38 @@ export default defineComponent({
 			searchValue: this.$route.query.search ? String(this.$route.query.search) : '',
 			pageNumber: this.$route.query.page ? parseInt(String(this.$route.query.page)) : 1,
 			currentSort: {} as {name: string, path: string, sortValue: string},
+			currentSortValue: this.$route.query.value ? String(this.$route.query.value): '',
+			currentSortName: this.$route.query.name ? String(this.$route.query.name): '',
+			currentSortItemPath: '',
 			limit: 20,
 			loading: true,
 			headers: [
-				{name: 'Avatar', path: 'picture.medium', sortValue: ''},
-				{name: 'Full Name', path: 'name.first', sortValue: ''},
-				{name: 'Gender', path: 'gender', sortValue: ''},
-				{name: 'Country', path: 'location.country', sortValue: ''},
-				{name: 'Birthday', path: 'dob.date', sortValue: ''},
-				{name: 'Email', path: 'email', sortValue: ''},
-				{name: 'Phone', path: 'phone', sortValue: ''},
+				{name: 'Avatar', path: 'picture.medium'},
+				{name: 'Full Name', path: 'name.first'},
+				{name: 'Gender', path: 'gender'},
+				{name: 'Country', path: 'location.country'},
+				{name: 'Birthday', path: 'dob.date'},
+				{name: 'Email', path: 'email'},
+				{name: 'Phone', path: 'phone'},
 			],
 		}
 	},
 	methods: {
-		getSortHeader() {
-			const findResult = this.headers.find((item) => item.name === this.$route.query.sortName);
-			if (findResult) this.currentSort = findResult;
-		},
+		// setSort() {
+		// 	const findResult = this.headers.find((item) => item.name === this.$route.query.sortName);
+		// 	if (findResult) {
+		// 		this.currentSort = findResult;
+		// 		this.sortTable(this.currentSort);
+		// 	}
+		// },
 		async fetchData() {
       try {
 				this.loading = true;
         getData<Response>('/api.json').then((data) => {
 					this.tableData = data;
 				}).then(() => {
-				this.getSortHeader();
-				this.sortTable(this.currentSort);
-				this.loading = false;
-				})
+				// this.setSort();
+				}).then(() => this.loading = false)
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -92,32 +96,25 @@ export default defineComponent({
       const split = path.split('.');
       return split.reduce((acc, el) => acc?.[el], obj);
     },
-		sortTable(item: {name: string, path: string, sortValue: string}) {
-			if (!item.sortValue) {
-				item.sortValue = 'ASC';
-				const newQuery = {
-				...this.$route.query,
-				sortName: item.name,
-				sortValue: item.sortValue
-				}
-				this.$router.push({ query: newQuery });
-      } else if (item.sortValue === 'ASC') {
-        item.sortValue = 'DESC';
-				const newQuery = {
-				...this.$route.query,
-				sortName: item.name,
-				sortValue: item.sortValue
-				}
-				this.$router.push({ query: newQuery });
-      } else if (item.sortValue === 'DESC') {
-				item.sortValue = '';
-				const newQuery = {
-				...this.$route.query,
-				sortName: item.name,
-				sortValue: item.sortValue
-				}
-				this.$router.push({ query: newQuery });
+		sortTable(sortName: string, sortItemPath: string) {
+			if (!this.currentSortValue) {
+				this.currentSortValue = 'ASC';
+				
+      } else if (this.currentSortValue === 'ASC') {
+        this.currentSortValue = 'DESC';
+
+      } else if (this.currentSortValue === 'DESC') {
+				this.currentSortValue = '';
 			}
+			this.currentSortItemPath = sortItemPath
+			this.currentSortName = sortName;
+			const newQuery = {
+				...this.$route.query,
+				sortName: this.currentSortName,
+				sortValue: this.currentSortValue
+			}
+			this.$router.push({ query: newQuery });
+			
 		},
 		formatDate(date: string): string {
 			const dateObj = new Date(date);
@@ -172,21 +169,25 @@ export default defineComponent({
 		},
 		filteredData(): ResponseResults[] {
 			if (!this.searchValue) {
-        return this.tableData.results;
+        return this.sortedData;
       }
-      return this.tableData.results.filter(item => this.matchesSearch(item, this.searchValue));
+      return this.sortedData.filter(item => this.matchesSearch(item, this.searchValue));
 		},
 		sortedData(): ResponseResults[] {
-			this.getSortHeader();
-			if (this.currentSort.sortValue === 'ASC')
-			return [...this.filteredData].sort((a, b) => {
-				return this.getObjData(a, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(b, this.currentSort.path).toLowerCase())
-			});
-			if (this.currentSort.sortValue === 'DESC')
-			return [...this.filteredData].sort((a, b) => {
-				return this.getObjData(b, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(a, this.currentSort.path).toLowerCase())
-			});
-			return this.filteredData;
+			if (this.currentSortValue) {
+				if (this.currentSortValue === 'ASC') {
+				return [...this.tableData.results].sort((a, b) => {
+					return this.getObjData(a, this.currentSortItemPath).toLowerCase().localeCompare(this.getObjData(b, this.currentSortItemPath).toLowerCase())
+				});
+			}
+			
+			if (this.currentSortValue === 'DESC')
+				return [...this.tableData.results].sort((a, b) => {
+					return this.getObjData(b, this.currentSortItemPath).toLowerCase().localeCompare(this.getObjData(a, this.currentSortItemPath).toLowerCase())
+				});
+			}
+			
+			return [...this.tableData.results];
 		},
 	},
 	mounted() {
