@@ -55,7 +55,7 @@ export default defineComponent({
 			tableData: {} as Response,
 			searchValue: this.$route.query.search ? String(this.$route.query.search) : '',
 			pageNumber: this.$route.query.page ? parseInt(String(this.$route.query.page)) : 1,
-			currentSort: {} as any,
+			currentSort: {} as {name: string, path: string, sortValue: string},
 			limit: 20,
 			loading: true,
 			headers: [
@@ -71,15 +71,19 @@ export default defineComponent({
 	},
 	methods: {
 		getSortHeader() {
-			this.currentSort = this.headers.find((item) => item.name === this.$route.query.sortName);
+			const findResult = this.headers.find((item) => item.name === this.$route.query.sortName);
+			if (findResult) this.currentSort = findResult;
 		},
 		async fetchData() {
       try {
 				this.loading = true;
-        this.tableData = await getData<Response>('/api.json');
-				this.loading = false;
+        getData<Response>('/api.json').then((data) => {
+					this.tableData = data;
+				}).then(() => {
 				this.getSortHeader();
 				this.sortTable(this.currentSort);
+				this.loading = false;
+				})
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -162,9 +166,9 @@ export default defineComponent({
 			if (!this.loading) {
 				const start = (this.pageNumber - 1) * this.limit;
 				const end = start + this.limit;
-				return (this.sortedData || []).slice(start, end);
+				return (this.filteredData || []).slice(start, end);
 			}
-			return this.sortedData;
+			return this.filteredData;
 		},
 		filteredData(): ResponseResults[] {
 			if (!this.searchValue) {
@@ -174,11 +178,11 @@ export default defineComponent({
 		},
 		sortedData(): ResponseResults[] {
 			this.getSortHeader();
-			if (this.currentSort?.sortValue === 'ASC')
+			if (this.currentSort.sortValue === 'ASC')
 			return [...this.filteredData].sort((a, b) => {
 				return this.getObjData(a, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(b, this.currentSort.path).toLowerCase())
 			});
-			if (this.currentSort?.sortValue === 'DESC')
+			if (this.currentSort.sortValue === 'DESC')
 			return [...this.filteredData].sort((a, b) => {
 				return this.getObjData(b, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(a, this.currentSort.path).toLowerCase())
 			});
