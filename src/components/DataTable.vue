@@ -75,6 +75,8 @@ export default defineComponent({
 				this.loading = true;
         this.tableData = await getData<Response>('/api.json');
 				this.loading = false;
+				const headerItem = this.headers.find((item) => item.name === this.$route.query.sortName);
+				if (headerItem) this.sortTable(headerItem);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
