@@ -184,8 +184,6 @@ export default defineComponent({
 	},
 	mounted() {
 		this.fetchData();
-		console.log(this.$route.query.value);
-		
 	}
 });
 </script>
