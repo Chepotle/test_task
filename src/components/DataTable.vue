@@ -56,9 +56,9 @@ export default defineComponent({
 			searchValue: this.$route.query.search ? String(this.$route.query.search) : '',
 			pageNumber: this.$route.query.page ? parseInt(String(this.$route.query.page)) : 1,
 			currentSort: {} as {name: string, path: string, sortValue: string},
-			currentSortValue: this.$route.query.value ? String(this.$route.query.value): '',
-			currentSortName: this.$route.query.name ? String(this.$route.query.name): '',
-			currentSortItemPath: '',
+			currentSortValue: this.$route.query.sortValue ? String(this.$route.query.sortValue): '',
+			currentSortName: this.$route.query.sortName ? String(this.$route.query.sortName): '',
+			currentSortItemPath: this.$route.query.sortPath ? String(this.$route.query.sortPath): '',
 			limit: 20,
 			loading: true,
 			headers: [
@@ -73,20 +73,11 @@ export default defineComponent({
 		}
 	},
 	methods: {
-		// setSort() {
-		// 	const findResult = this.headers.find((item) => item.name === this.$route.query.sortName);
-		// 	if (findResult) {
-		// 		this.currentSort = findResult;
-		// 		this.sortTable(this.currentSort);
-		// 	}
-		// },
 		async fetchData() {
       try {
 				this.loading = true;
         getData<Response>('/api.json').then((data) => {
 					this.tableData = data;
-				}).then(() => {
-				// this.setSort();
 				}).then(() => this.loading = false)
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -111,7 +102,8 @@ export default defineComponent({
 			const newQuery = {
 				...this.$route.query,
 				sortName: this.currentSortName,
-				sortValue: this.currentSortValue
+				sortValue: this.currentSortValue,
+				sortPath: this.currentSortItemPath,
 			}
 			this.$router.push({ query: newQuery });
 			
@@ -174,7 +166,7 @@ export default defineComponent({
       return this.sortedData.filter(item => this.matchesSearch(item, this.searchValue));
 		},
 		sortedData(): ResponseResults[] {
-			if (this.currentSortValue) {
+			if (this.currentSortItemPath) {
 				if (this.currentSortValue === 'ASC') {
 				return [...this.tableData.results].sort((a, b) => {
 					return this.getObjData(a, this.currentSortItemPath).toLowerCase().localeCompare(this.getObjData(b, this.currentSortItemPath).toLowerCase())
@@ -192,6 +184,8 @@ export default defineComponent({
 	},
 	mounted() {
 		this.fetchData();
+		console.log(this.$route.query.value);
+		
 	}
 });
 </script>
