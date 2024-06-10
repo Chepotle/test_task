@@ -174,11 +174,11 @@ export default defineComponent({
 		},
 		sortedData(): ResponseResults[] {
 			this.getSortHeader();
-			if (this.currentSort.sortValue === 'ASC')
+			if (this.currentSort?.sortValue === 'ASC')
 			return [...this.filteredData].sort((a, b) => {
 				return this.getObjData(a, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(b, this.currentSort.path).toLowerCase())
 			});
-			if (this.currentSort.sortValue === 'DESC')
+			if (this.currentSort?.sortValue === 'DESC')
 			return [...this.filteredData].sort((a, b) => {
 				return this.getObjData(b, this.currentSort.path).toLowerCase().localeCompare(this.getObjData(a, this.currentSort.path).toLowerCase())
 			});
